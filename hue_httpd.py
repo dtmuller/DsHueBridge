@@ -5,10 +5,12 @@ from flask_restful import Resource, Api
 app = Flask(__name__)
 api = Api(app)
 
+# Description XML
 @app.route("/description.xml")
 def index():
     return config.DESCRIPTION_XML
 
+# Read/write config
 class Config(Resource):
     def get(self, user):
         if user == config.USER:
@@ -23,53 +25,47 @@ class Config(Resource):
         else:
             return [{"error":{"type":1,"address":"/config","description":"unauthorized user"}}]
 
-class Full(Resource):
+# Read full config
+class FullConfig(Resource):
     def get(self, user):
         if user == config.USER:
             return config.HueConfig
         else:
            return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
 
-class Lights(Resource):
-    def get(self, user):
+# Handle lights, groups, sensors
+class Devices(Resource):
+    def get(self, user, devices):
         if user == config.USER:
-            return config.HueConfig["lights"]
+            if devices == "lights":
+                return config.HueConfig["lights"]
+            elif devices == "groups":
+                return config.HueConfig["groups"]
+            elif devices == "sensors":
+                return config.HueConfig["sensors"]
+            else:
+                return [{"error":{"type":3,"address":f"/{devices}","description":f"resource, /{devices}, not available"}}]
         else:
-           return [{"error":{"type":1,"address":"/lights","description":"unauthorized user"}}]
+           return [{"error":{"type":1,"address":f"/{devices}","description":"unauthorized user"}}]
 
-class Groups(Resource):
-    def get(self, user):
-        if user == config.USER:
-            return config.HueConfig["groups"]
-        else:
-           return [{"error":{"type":1,"address":"/groups","description":"unauthorized user"}}]
-
-class Sensors(Resource):
-    def get(self, user):
-        if user == config.USER:
-            return config.HueConfig["sensors"]
-        else:
-           return [{"error":{"type":1,"address":"/sensors","description":"unauthorized user"}}]
-
-class New(Resource):
-    def get(self, user, device):
+# Discover light, groups, sensors
+class NewDevices(Resource):
+    def get(self, user, devices):
         if user == config.USER:
             return {"lastscan":"none"}
         else:
-           return [{"error":{"type":1,"address":"/{}".format(device),"description":"unauthorized user"}}]
+           return [{"error":{"type":1,"address":f"/{device}","description":"unauthorized user"}}]
 
-class User(Resource):
+# Create new user
+class CreateUser(Resource):
     def post(self):
         return [{"success":{"username":config.USER}}]
 
-#TODO Must also work for api/config & api/a/b/config
-api.add_resource(New, "/api/<string:user>/<string:device>/new")
-api.add_resource(Sensors, "/api/<string:user>/sensors")
-api.add_resource(Groups, "/api/<string:user>/groups")
-api.add_resource(Lights, "/api/<string:user>/lights")
-api.add_resource(Config, "/api/<string:user>/config")
-api.add_resource(Full, "/api/<string:user>")
-api.add_resource(User, "/api")
+api.add_resource(NewDevices, "/api/<string:user>/<string:devices>/new")
+api.add_resource(Devices,    "/api/<string:user>/<string:devices>")
+api.add_resource(Config,     "/api/<string:user>/config")
+api.add_resource(FullConfig, "/api/<string:user>")
+api.add_resource(CreateUser, "/api")
 
 if __name__ == "__main__":
     import config
